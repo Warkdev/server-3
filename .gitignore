@@ -12,6 +12,9 @@
 !.gitattributes
 !.travis.yml
 
+# Visual Studio - project settings
+/.vs
+
 # JetBrains - project settings
 /.idea/
 
