@@ -27,9 +27,9 @@
 #include "vmapexport.h"
 #include "adtfile.h"
 
-#ifdef WIN32
-#define snprintf _snprintf
-#endif
+//#ifdef WIN32
+//#define snprintf _snprintf
+//#endif
 
 const char* GetPlainName(const char* FileName)
 {
