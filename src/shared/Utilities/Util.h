@@ -31,11 +31,13 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
+#include <cctype>
 
-/**
- * @brief
- *
- */
+ /**
+  * @brief
+  *
+  */
 typedef std::vector<std::string> Tokens;
 
 /**
@@ -63,7 +65,6 @@ uint32 GetUInt32ValueFromArray(Tokens const& data, uint16 index);
  */
 float GetFloatValueFromArray(Tokens const& data, uint16 index);
 
-float NormalizeOrientation(float o);
 /**
  * @brief
  *
@@ -94,6 +95,7 @@ uint32 TimeStringToSecs(const std::string& timestring);
  * @return std::string
  */
 std::string TimeToTimestampStr(time_t t);
+
 time_t timeBitFieldsToSecs(uint32 packedDate);
 
 std::string MoneyToString(uint64 money);
@@ -106,22 +108,9 @@ std::string MoneyToString(uint64 money);
 inline uint32 secsToTimeBitFields(time_t secs)
 {
     tm* lt = localtime(&secs);
-    return (lt->tm_year - 100) << 24 | lt->tm_mon  << 20 | (lt->tm_mday - 1) << 14 | lt->tm_wday << 11 | lt->tm_hour << 6 | lt->tm_min;
+    return (lt->tm_year - 100) << 24 | lt->tm_mon << 20 | (lt->tm_mday - 1) << 14 | lt->tm_wday << 11 | lt->tm_hour << 6 | lt->tm_min;
 }
 
-/**
- * @brief Initializes the TSS for MersenneTwister
- *
- *
- */
-void initMTRandTSS();
-
-/**
- * @brief Cleanups the TSS for MersenneTwister
- *
- *
- */
-void deleteMTRandTSS();
 
 /**
  * @brief Return a random number in the range min..max; (max-min) must be smaller than 32768.
@@ -130,7 +119,7 @@ void deleteMTRandTSS();
  * @param max
  * @return int32
  */
- int32 irand(int32 min, int32 max);
+int32 irand(int32 min, int32 max);
 
 /**
  * @brief Return a random number in the range min..max (inclusive).
@@ -142,7 +131,7 @@ void deleteMTRandTSS();
  * @param max
  * @return uint32
  */
- uint32 urand(uint32 min, uint32 max);
+uint32 urand(uint32 min, uint32 max);
 
 /**
  * @brief Return a random number in the range min..max (inclusive).
@@ -151,14 +140,14 @@ void deleteMTRandTSS();
  * @param max
  * @return float
  */
- float frand(float min, float max);
+float frand(float min, float max);
 
 /**
  * @brief Return a random number in the range 0 .. RAND32_MAX.
  *
  * @return int32
  */
- int32 rand32();
+uint32 rand32();
 
 /**
  * @brief Return a random double from 0.0 to 1.0 (exclusive).
@@ -169,14 +158,14 @@ void deleteMTRandTSS();
  *
  * @return double
  */
- double rand_norm(void);
+double rand_norm(void);
 
 /**
  * @brief
  *
  * @return float
  */
- float rand_norm_f(void);
+float rand_norm_f(void);
 
 /**
  * @brief Return a random double from 0.0 to 99.9999999999999.
@@ -187,14 +176,14 @@ void deleteMTRandTSS();
  *
  * @return double
  */
- double rand_chance(void);
+double rand_chance(void);
 
 /**
  * @brief
  *
  * @return float
  */
- float rand_chance_f(void);
+float rand_chance_f(void);
 
 /**
  * @brief Return true if a random roll gets above the given chance
@@ -271,14 +260,6 @@ inline void ApplyPercentModFloatVar(float& var, float val, bool apply)
     }
     var *= (apply ? (100.0f + val) / 100.0f : 100.0f / (100.0f + val));
 }
-
-/**
- * @brief
- *
- * @param utf8String
- * @return bool
- */
-bool Utf8ToUpperOnlyLatin(std::string& utf8String);
 
 /**
  * @brief
@@ -570,7 +551,7 @@ inline bool isNumeric(std::wstring const& str)
  * @param numericOrSpace
  * @return bool
  */
-inline bool isBasicLatinString(const std::wstring &wstr, bool numericOrSpace)
+inline bool isBasicLatinString(const std::wstring& wstr, bool numericOrSpace)
 {
     for (size_t i = 0; i < wstr.size(); ++i)
         if (!isBasicLatinCharacter(wstr[i]) && (!numericOrSpace || !isNumericOrSpace(wstr[i])))
@@ -587,7 +568,7 @@ inline bool isBasicLatinString(const std::wstring &wstr, bool numericOrSpace)
  * @param numericOrSpace
  * @return bool
  */
-inline bool isExtendedLatinString(const std::wstring &wstr, bool numericOrSpace)
+inline bool isExtendedLatinString(const std::wstring& wstr, bool numericOrSpace)
 {
     for (size_t i = 0; i < wstr.size(); ++i)
         if (!isExtendedLatinCharacter(wstr[i]) && (!numericOrSpace || !isNumericOrSpace(wstr[i])))
@@ -604,7 +585,7 @@ inline bool isExtendedLatinString(const std::wstring &wstr, bool numericOrSpace)
  * @param numericOrSpace
  * @return bool
  */
-inline bool isCyrillicString(const std::wstring &wstr, bool numericOrSpace)
+inline bool isCyrillicString(const std::wstring& wstr, bool numericOrSpace)
 {
     for (size_t i = 0; i < wstr.size(); ++i)
         if (!isCyrillicCharacter(wstr[i]) && (!numericOrSpace || !isNumericOrSpace(wstr[i])))
@@ -621,7 +602,7 @@ inline bool isCyrillicString(const std::wstring &wstr, bool numericOrSpace)
  * @param numericOrSpace
  * @return bool
  */
-inline bool isEastAsianString(const std::wstring &wstr, bool numericOrSpace)
+inline bool isEastAsianString(const std::wstring& wstr, bool numericOrSpace)
 {
     for (size_t i = 0; i < wstr.size(); ++i)
         if (!isEastAsianCharacter(wstr[i]) && (!numericOrSpace || !isNumericOrSpace(wstr[i])))
@@ -638,7 +619,7 @@ inline bool isEastAsianString(const std::wstring &wstr, bool numericOrSpace)
  */
 inline void strToUpper(std::string& str)
 {
-    std::transform(str.begin(), str.end(), str.begin(), toupper);
+    std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) { return toupper(c); });
 }
 
 /**
@@ -648,7 +629,7 @@ inline void strToUpper(std::string& str)
  */
 inline void strToLower(std::string& str)
 {
-    std::transform(str.begin(), str.end(), str.begin(), tolower);
+    std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) { return tolower(c); });
 }
 
 /**
@@ -755,7 +736,7 @@ inline wchar_t wcharToLower(wchar_t wchar)
  */
 inline void wstrToUpper(std::wstring& str)
 {
-    std::transform(str.begin(), str.end(), str.begin(), wcharToUpper);
+    std::transform(str.begin(), str.end(), str.begin(), [](wchar_t w) {return wcharToUpper(w); });
 }
 
 /**
@@ -765,12 +746,10 @@ inline void wstrToUpper(std::wstring& str)
  */
 inline void wstrToLower(std::wstring& str)
 {
-    std::transform(str.begin(), str.end(), str.begin(), wcharToLower);
+    std::transform(str.begin(), str.end(), str.begin(), [](wchar_t w) {return wcharToLower(w); });
 }
 
-
 std::wstring GetMainPartOfName(std::wstring wname, uint32 declension);
-
 
 /**
  * @brief

@@ -1937,7 +1937,7 @@ void Player::SendTeleportPacket(float oldX, float oldY, float oldZ, float oldO)
 
 bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientation, uint32 options /*=0*/, AreaTrigger const* at /*=NULL*/)
 {
-    orientation = NormalizeOrientation(orientation);
+    orientation = MapManager::NormalizeOrientation(orientation);
 
     if (!MapManager::IsValidMapCoord(mapid, x, y, z, orientation))
     {
@@ -2192,13 +2192,13 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
                 if (m_transport)
                 {
                     data << float(m_movementInfo.GetTransportPos()->x);
-                    data << float(NormalizeOrientation(m_movementInfo.GetTransportPos()->o));
+                    data << float(MapManager::NormalizeOrientation(m_movementInfo.GetTransportPos()->o));
                     data << float(m_movementInfo.GetTransportPos()->y);
                 }
                 else
                 {
                     data << float(final_x);
-                    data << float(NormalizeOrientation(final_o));
+                    data << float(MapManager::NormalizeOrientation(final_o));
                     data << float(final_y);
                 }
 
@@ -23349,7 +23349,7 @@ void Player::InitPrimaryProfessions()
 
 void Player::SendComboPoints()
 {
-    Unit* combotarget = ObjectAccessor::GetUnit(*this, m_comboTargetGuid);
+    Unit* combotarget = sObjectAccessor.GetUnit(*this, m_comboTargetGuid);
     if (combotarget)
     {
         WorldPacket data(SMSG_UPDATE_COMBO_POINTS, combotarget->GetPackGUID().size() + 1);
@@ -23383,7 +23383,7 @@ void Player::AddComboPoints(Unit* target, int8 count)
     else
     {
         if (m_comboTargetGuid)
-            if (Unit* target2 = ObjectAccessor::GetUnit(*this, m_comboTargetGuid))
+            if (Unit* target2 = sObjectAccessor.GetUnit(*this, m_comboTargetGuid))
             {
                 target2->RemoveComboPointHolder(GetGUIDLow());
             }
@@ -23416,7 +23416,7 @@ void Player::ClearComboPoints()
 
     SendComboPoints();
 
-    if (Unit* target = ObjectAccessor::GetUnit(*this, m_comboTargetGuid))
+    if (Unit* target = sObjectAccessor.GetUnit(*this, m_comboTargetGuid))
     {
         target->RemoveComboPointHolder(GetGUIDLow());
     }
@@ -25010,7 +25010,7 @@ void Player::UpdateUnderwaterState(Map* m, float x, float y, float z)
                                 }
                                 else
                                 {
-                                    SummonCreature(21508, 0, 0, 0, 0, TEMPSUMMON_TIMED_OOC_DESPAWN, 2000);
+                                    SummonCreature(21508, 0, 0, 0, 0, TEMPSPAWN_TIMED_OOC_DESPAWN, 2000);
                                     // Special update timer for the SSC water
                                     m_positionStatusUpdateTimer = 2000;
                                 }
@@ -27223,7 +27223,7 @@ Object* Player::GetObjectByTypeMask(ObjectGuid guid, TypeMask typemask)
             }
             if ((typemask & TYPEMASK_PLAYER) && IsInWorld())
             {
-                return ObjectAccessor::FindPlayer(guid);
+                return sObjectAccessor.FindPlayer(guid);
             }
             break;
         case HIGHGUID_GAMEOBJECT:

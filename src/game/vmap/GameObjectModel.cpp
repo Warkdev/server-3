@@ -151,7 +151,7 @@ bool GameObjectModel::initialize(const GameObject* const pGo, const GameObjectDi
     for (int i = 0; i < 8; ++i)
     {
         Vector3 pos(iBound.corner(i));
-        if (Creature* c = const_cast<GameObject*>(pGo)->SummonCreature(24440, pos.x, pos.y, pos.z, 0, TEMPSUMMON_MANUAL_DESPAWN, 0))
+        if (Creature* c = const_cast<GameObject*>(pGo)->SummonCreature(24440, pos.x, pos.y, pos.z, 0, TEMPSPAWN_MANUAL_DESPAWN, 0))
         {
             c->setFaction(35);
             c->SetObjectScale(0.1f);
@@ -179,6 +179,26 @@ GameObjectModel* GameObjectModel::construct(const GameObject* const pGo)
 
     return mdl;
 }
+
+void GameObjectModel::UpdateRotation(G3D::Quat const& q)
+{
+    iQuat = q;
+
+    G3D::AABox mdl_box(iModelBound);
+
+    // transform bounding box:
+    mdl_box = AABox(mdl_box.low() * iScale, mdl_box.high() * iScale);
+
+    G3D::AABox rotated_bounds;
+
+    for (int i = 0; i < 8; ++i)
+    {
+        rotated_bounds.merge((iQuat * G3D::Quat(mdl_box.corner(i)) * iQuat.conj()).imag());
+    }
+
+    iBound = rotated_bounds + iPos;
+}
+
 
 bool GameObjectModel::intersectRay(const G3D::Ray& ray, float& MaxDist, bool StopAtFirstHit, uint32 ph_mask) const
 {

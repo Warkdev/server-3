@@ -475,7 +475,7 @@ void WorldSession::HandleSetActiveMoverOpcode(WorldPacket& recv_data)
     }
     else
     {
-        if (Unit* mover = ObjectAccessor::GetUnit(*GetPlayer(), guid))
+        if (Unit* mover = sObjectAccessor.GetUnit(*GetPlayer(), guid))
         {
             _player->SetMover(mover);
         }

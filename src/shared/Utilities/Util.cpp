@@ -25,14 +25,11 @@
 #include "Util.h"
 #include "Timer.h"
 
-#include "utf8cpp/utf8.h"
-#include <mersennetwister/MersenneTwister.h>
+#include "utf8.h"
+#include "RNGen.h"
 #include <ace/TSS_T.h>
 #include <ace/INET_Addr.h>
 #include "Log/Log.h"
-
-typedef ACE_TSS<MTRand> MTRandTSS;
-static MTRandTSS *mtRand;
 
 static ACE_Time_Value g_SystemTickTime = ACE_OS::gettimeofday();
 
@@ -75,54 +72,44 @@ uint32 WorldTimer::getMSTime_internal()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void initMTRandTSS()
-{
-    mtRand = new ACE_TSS<MTRand>();
-}
-
-void deleteMTRandTSS()
-{
-    delete mtRand;
-}
-
 int32 irand(int32 min, int32 max)
 {
-    return int32((*mtRand)->randInt(max - min)) + min;
+    return RNG::instance()->rand_i(min, max);
 }
 
 uint32 urand(uint32 min, uint32 max)
 {
-    return (*mtRand)->randInt(max - min) + min;
+    return RNG::instance()->rand_u(min, max);
 }
 
 float frand(float min, float max)
 {
-    return (*mtRand)->randExc(max - min) + min;
+    return RNG::instance()->rand_f(min, max);
 }
 
-int32 rand32()
+uint32 rand32()
 {
-    return (*mtRand)->randInt();
+    return RNG::instance()->rand();
 }
 
 double rand_norm(void)
 {
-    return (*mtRand)->randExc();
+    return RNG::instance()->rand_d(0.0, 1.0);
 }
 
 float rand_norm_f(void)
 {
-    return (float)(*mtRand)->randExc();
+    return RNG::instance()->rand_f(0.0, 1.0);
 }
 
 double rand_chance(void)
 {
-    return (*mtRand)->randExc(100.0);
+    return RNG::instance()->rand_d(0.0, 100.0);
 }
 
 float rand_chance_f(void)
 {
-    return (float)(*mtRand)->randExc(100.0);
+    return RNG::instance()->rand_f(0.0, 100.0);
 }
 
 Tokens StrSplit(const std::string& src, const std::string& sep)
@@ -170,21 +157,6 @@ float GetFloatValueFromArray(Tokens const& data, uint16 index)
     return result;
 }
 
-// modulos a radian orientation to the range of 0..2PI
-float NormalizeOrientation(float o)
-{
-    // fmod only supports positive numbers. Thus we have
-    // to emulate negative numbers
-    if (o < 0)
-    {
-        float mod = o * -1;
-        mod = fmod(mod, 2.0f * M_PI_F);
-        mod = -mod + 2.0f * M_PI_F;
-        return mod;
-    }
-    return fmod(o, 2.0f * M_PI_F);
-}
-
 void stripLineInvisibleChars(std::string& str)
 {
     static std::string invChars = " \t\7\n";
@@ -224,10 +196,10 @@ void stripLineInvisibleChars(std::string& str)
 
 std::string secsToTimeString(time_t timeInSecs, bool shortText, bool hoursOnly)
 {
-    time_t secs    = timeInSecs % MINUTE;
+    time_t secs = timeInSecs % MINUTE;
     time_t minutes = timeInSecs % HOUR / MINUTE;
-    time_t hours   = timeInSecs % DAY  / HOUR;
-    time_t days    = timeInSecs / DAY;
+    time_t hours = timeInSecs % DAY / HOUR;
+    time_t days = timeInSecs / DAY;
 
     std::ostringstream ss;
     if (days)
@@ -255,8 +227,8 @@ std::string secsToTimeString(time_t timeInSecs, bool shortText, bool hoursOnly)
 
 uint32 TimeStringToSecs(const std::string& timestring)
 {
-    uint32 secs       = 0;
-    uint32 buffer     = 0;
+    uint32 secs = 0;
+    uint32 buffer = 0;
     uint32 multiplier = 0;
 
     for (std::string::const_iterator itr = timestring.begin(); itr != timestring.end(); ++itr)
@@ -270,11 +242,11 @@ uint32 TimeStringToSecs(const std::string& timestring)
         {
             switch (*itr)
             {
-                case 'd': multiplier = DAY;     break;
-                case 'h': multiplier = HOUR;    break;
-                case 'm': multiplier = MINUTE;  break;
-                case 's': multiplier = 1;       break;
-                default : return 0;                         // bad format
+            case 'd': multiplier = DAY;     break;
+            case 'h': multiplier = HOUR;    break;
+            case 'm': multiplier = MINUTE;  break;
+            case 's': multiplier = 1;       break;
+            default: return 0;                         // bad format
             }
             buffer *= multiplier;
             secs += buffer;
@@ -420,19 +392,6 @@ void utf8truncate(std::string& utf8str, size_t len)
     }
 }
 
-bool Utf8ToUpperOnlyLatin(std::string& utf8String)
-{
-    std::wstring wstr;
-    if (!Utf8toWStr(utf8String, wstr))
-    {
-        return false;
-    }
-
-    std::transform(wstr.begin(), wstr.end(), wstr.begin(), wcharToUpperOnlyLatin);
-
-    return WStrToUtf8(wstr, utf8String);
-}
-
 bool Utf8toWStr(char const* utf8str, size_t csize, wchar_t* wstr, size_t& wsize)
 {
     try
@@ -538,22 +497,22 @@ std::wstring GetMainPartOfName(std::wstring wname, uint32 declension)
 
     // Important: end length must be <= MAX_INTERNAL_PLAYER_NAME-MAX_PLAYER_NAME (3 currently)
 
-    static wchar_t const a_End[]    = { wchar_t(1), wchar_t(0x0430), wchar_t(0x0000)};
-    static wchar_t const o_End[]    = { wchar_t(1), wchar_t(0x043E), wchar_t(0x0000)};
-    static wchar_t const ya_End[]   = { wchar_t(1), wchar_t(0x044F), wchar_t(0x0000)};
-    static wchar_t const ie_End[]   = { wchar_t(1), wchar_t(0x0435), wchar_t(0x0000)};
-    static wchar_t const i_End[]    = { wchar_t(1), wchar_t(0x0438), wchar_t(0x0000)};
-    static wchar_t const yeru_End[] = { wchar_t(1), wchar_t(0x044B), wchar_t(0x0000)};
-    static wchar_t const u_End[]    = { wchar_t(1), wchar_t(0x0443), wchar_t(0x0000)};
-    static wchar_t const yu_End[]   = { wchar_t(1), wchar_t(0x044E), wchar_t(0x0000)};
-    static wchar_t const oj_End[]   = { wchar_t(2), wchar_t(0x043E), wchar_t(0x0439), wchar_t(0x0000)};
-    static wchar_t const ie_j_End[] = { wchar_t(2), wchar_t(0x0435), wchar_t(0x0439), wchar_t(0x0000)};
-    static wchar_t const io_j_End[] = { wchar_t(2), wchar_t(0x0451), wchar_t(0x0439), wchar_t(0x0000)};
-    static wchar_t const o_m_End[]  = { wchar_t(2), wchar_t(0x043E), wchar_t(0x043C), wchar_t(0x0000)};
-    static wchar_t const io_m_End[] = { wchar_t(2), wchar_t(0x0451), wchar_t(0x043C), wchar_t(0x0000)};
-    static wchar_t const ie_m_End[] = { wchar_t(2), wchar_t(0x0435), wchar_t(0x043C), wchar_t(0x0000)};
-    static wchar_t const soft_End[] = { wchar_t(1), wchar_t(0x044C), wchar_t(0x0000)};
-    static wchar_t const j_End[]    = { wchar_t(1), wchar_t(0x0439), wchar_t(0x0000)};
+    static wchar_t const a_End[] = { wchar_t(1), wchar_t(0x0430), wchar_t(0x0000) };
+    static wchar_t const o_End[] = { wchar_t(1), wchar_t(0x043E), wchar_t(0x0000) };
+    static wchar_t const ya_End[] = { wchar_t(1), wchar_t(0x044F), wchar_t(0x0000) };
+    static wchar_t const ie_End[] = { wchar_t(1), wchar_t(0x0435), wchar_t(0x0000) };
+    static wchar_t const i_End[] = { wchar_t(1), wchar_t(0x0438), wchar_t(0x0000) };
+    static wchar_t const yeru_End[] = { wchar_t(1), wchar_t(0x044B), wchar_t(0x0000) };
+    static wchar_t const u_End[] = { wchar_t(1), wchar_t(0x0443), wchar_t(0x0000) };
+    static wchar_t const yu_End[] = { wchar_t(1), wchar_t(0x044E), wchar_t(0x0000) };
+    static wchar_t const oj_End[] = { wchar_t(2), wchar_t(0x043E), wchar_t(0x0439), wchar_t(0x0000) };
+    static wchar_t const ie_j_End[] = { wchar_t(2), wchar_t(0x0435), wchar_t(0x0439), wchar_t(0x0000) };
+    static wchar_t const io_j_End[] = { wchar_t(2), wchar_t(0x0451), wchar_t(0x0439), wchar_t(0x0000) };
+    static wchar_t const o_m_End[] = { wchar_t(2), wchar_t(0x043E), wchar_t(0x043C), wchar_t(0x0000) };
+    static wchar_t const io_m_End[] = { wchar_t(2), wchar_t(0x0451), wchar_t(0x043C), wchar_t(0x0000) };
+    static wchar_t const ie_m_End[] = { wchar_t(2), wchar_t(0x0435), wchar_t(0x043C), wchar_t(0x0000) };
+    static wchar_t const soft_End[] = { wchar_t(1), wchar_t(0x044C), wchar_t(0x0000) };
+    static wchar_t const j_End[] = { wchar_t(1), wchar_t(0x0439), wchar_t(0x0000) };
 
     static wchar_t const* const dropEnds[6][8] =
     {
@@ -565,7 +524,7 @@ std::wstring GetMainPartOfName(std::wstring wname, uint32 declension)
         { &ie_End[1], &i_End[1],    NULL,         NULL,        NULL,         NULL,         NULL,       NULL }
     };
 
-    for (wchar_t const * const* itr = &dropEnds[declension][0]; *itr; ++itr)
+    for (wchar_t const* const* itr = &dropEnds[declension][0]; *itr; ++itr)
     {
         size_t len = size_t((*itr)[-1]);                    // get length from string size field
 
@@ -577,7 +536,6 @@ std::wstring GetMainPartOfName(std::wstring wname, uint32 declension)
 
     return wname;
 }
-
 
 bool utf8ToConsole(const std::string& utf8str, std::string& conStr)
 {
@@ -611,6 +569,7 @@ bool consoleToUtf8(const std::string& conStr, std::string& utf8str)
     utf8str = conStr;
     return true;
 #endif
+
 }
 
 bool Utf8FitTo(const std::string& str, std::wstring search)
@@ -649,6 +608,7 @@ void vutf8printf(FILE* out, const char* str, va_list* ap)
 #else
     vfprintf(out, str, *ap);
 #endif
+
 }
 
 void hexEncodeByteArray(uint8* bytes, uint32 arrayLen, std::string& result)
@@ -741,6 +701,7 @@ void utf8print(void* /*arg*/, const char* str)
 #else
     printf("%s", str);
 #endif
+
 }
 
 void utf8printf(FILE* out, const char* str, ...)
@@ -753,6 +714,7 @@ void utf8printf(FILE* out, const char* str, ...)
 
 int return_iCoreNumber()
 {
+
 #if defined(CLASSIC)
     return 0;
 #elif defined(TBC)
@@ -770,6 +732,7 @@ int return_iCoreNumber()
 #else
     return -1;
 #endif
+
 }
 
 /// Print out the core banner

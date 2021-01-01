@@ -2255,9 +2255,9 @@ struct  SpellEntry
         inline bool HasAttribute(SpellAttributesEx5 attribute) const { return AttributesEx5 & attribute; }
         inline bool HasAttribute(SpellAttributesEx6 attribute) const { return AttributesEx6 & attribute; }
         inline bool HasAttribute(SpellAttributesEx7 attribute) const { return AttributesEx7 & attribute; }
-    inline bool HasAttribute(SpellAttributesEx8 attribute) const { return AttributesEx8 & attribute; }
-    inline bool HasAttribute(SpellAttributesEx9 attribute) const { return AttributesEx9 & attribute; }
-    inline bool HasAttribute(SpellAttributesEx10 attribute) const { return AttributesEx10 & attribute; }
+        inline bool HasAttribute(SpellAttributesEx8 attribute) const { return AttributesEx8 & attribute; }
+        inline bool HasAttribute(SpellAttributesEx9 attribute) const { return AttributesEx9 & attribute; }
+        inline bool HasAttribute(SpellAttributesEx10 attribute) const { return AttributesEx10 & attribute; }
 
     private:
         // prevent creating custom entries (copy data from original in fact)

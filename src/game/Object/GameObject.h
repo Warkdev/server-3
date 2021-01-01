@@ -631,6 +631,12 @@ enum CapturePointSliderValue
 
 class Unit;
 class GameObjectModel;
+
+namespace G3D
+{
+    class Quat;
+};
+
 struct GameObjectDisplayInfoEntry;
 
 // 5 sec for bobber catch
@@ -669,6 +675,12 @@ class GameObject : public WorldObject
         void SaveToDB(uint32 mapid, uint8 spawnMask, uint32 phaseMask);
         bool LoadFromDB(uint32 guid, Map* map);
         void DeleteFromDB();
+
+        // rotation methods
+        void GetQuaternion(G3D::Quat& q) const;
+        void SetQuaternion(G3D::Quat const& q);
+        float GetOrientationFromQuat(G3D::Quat const& q);
+        int64 GetPackedRotation();
 
         void SetOwnerGuid(ObjectGuid ownerGuid)
         {

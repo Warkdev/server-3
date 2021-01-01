@@ -467,7 +467,7 @@ void MovementInfo::Write(ByteBuffer& data, uint16 opcode) const
             case MSEPositionO:
                 if (si.hasOrientation)
                 {
-                    data << float(NormalizeOrientation(pos.o));
+                    data << float(MapManager::NormalizeOrientation(pos.o));
                 }
                 break;
             case MSEPitch:
@@ -524,7 +524,7 @@ void MovementInfo::Write(ByteBuffer& data, uint16 opcode) const
             case MSETransportPositionO:
                 if (hasTransportData)
                 {
-                    data << float(NormalizeOrientation(t_pos.o));
+                    data << float(MapManager::NormalizeOrientation(t_pos.o));
                 }
                 break;
             case MSETransportPositionX:
@@ -7483,7 +7483,7 @@ Unit* Unit::GetOwner() const
 {
     if (ObjectGuid ownerid = GetOwnerGuid())
     {
-        return ObjectAccessor::GetUnit(*this, ownerid);
+        return sObjectAccessor.GetUnit(*this, ownerid);
     }
     return NULL;
 }
@@ -7492,7 +7492,7 @@ Unit* Unit::GetCharmer() const
 {
     if (ObjectGuid charmerid = GetCharmerGuid())
     {
-        return ObjectAccessor::GetUnit(*this, charmerid);
+        return sObjectAccessor.GetUnit(*this, charmerid);
     }
     return NULL;
 }
@@ -7512,7 +7512,7 @@ Player* Unit::GetCharmerOrOwnerPlayerOrPlayerItself()
     ObjectGuid guid = GetCharmerOrOwnerGuid();
     if (guid.IsPlayer())
     {
-        return ObjectAccessor::FindPlayer(guid);
+        return sObjectAccessor.FindPlayer(guid);
     }
 
     return GetTypeId() == TYPEID_PLAYER ? (Player*)this : NULL;
@@ -7523,7 +7523,7 @@ Player const* Unit::GetCharmerOrOwnerPlayerOrPlayerItself() const
     ObjectGuid guid = GetCharmerOrOwnerGuid();
     if (guid.IsPlayer())
     {
-        return ObjectAccessor::FindPlayer(guid);
+        return sObjectAccessor.FindPlayer(guid);
     }
 
     return GetTypeId() == TYPEID_PLAYER ? (Player const*)this : NULL;
@@ -7576,7 +7576,7 @@ Unit* Unit::GetCharm() const
 {
     if (ObjectGuid charm_guid = GetCharmGuid())
     {
-        if (Unit* pet = ObjectAccessor::GetUnit(*this, charm_guid))
+        if (Unit* pet = sObjectAccessor.GetUnit(*this, charm_guid))
         {
             return pet;
         }
@@ -14368,13 +14368,13 @@ Unit* Unit::TakePossessOf(SpellEntry const* spellEntry, SummonPropertiesEntry co
     pCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);  // set flag for client that mean this unit is controlled by a player
     pCreature->addUnitState(UNIT_STAT_CONTROLLED);                      // also set internal unit state flag
     pCreature->SelectLevel(getLevel());                                 // set level to same level than summoner TODO:: not sure its always the case...
-    pCreature->SetLinkedToOwnerAura(TEMPSUMMON_LINKED_AURA_OWNER_CHECK | TEMPSUMMON_LINKED_AURA_REMOVE_OWNER); // set what to do if linked aura is removed or the creature is dead.
+    pCreature->SetLinkedToOwnerAura(TEMPSPAWN_LINKED_AURA_OWNER_CHECK | TEMPSPAWN_LINKED_AURA_REMOVE_OWNER); // set what to do if linked aura is removed or the creature is dead.
     pCreature->SetWalk(IsWalking(), true);                              // sync the walking state with the summoner
 
     // important before adding to the map!
     SetCharmGuid(pCreature->GetObjectGuid());                           // save guid of charmed creature
 
-    pCreature->SetSummonProperties(TEMPSUMMON_CORPSE_TIMED_DESPAWN, 5000); // set 5s corpse decay
+    pCreature->SetSummonProperties(TEMPSPAWN_CORPSE_TIMED_DESPAWN, 5000); // set 5s corpse decay
     GetMap()->Add(static_cast<Creature*>(pCreature));                   // create the creature in the client
 
     // Give the control to the player

@@ -29,6 +29,7 @@
 #include <G3D/Vector3.h>
 #include <G3D/AABox.h>
 #include <G3D/Ray.h>
+#include <G3D/Quat.h>
 #include "DBCStructure.h"
 #include "GameObject.h"
 
@@ -47,8 +48,10 @@ class GameObjectModel
 {
         uint32 phasemask;
         G3D::AABox iBound; /**< TODO */
+        G3D::AABox iModelBound;
         G3D::Matrix3 iInvRot; /**< TODO */
         G3D::Vector3 iPos; /**< TODO */
+        G3D::Quat iQuat;  //Note: this must be a unit quaternion!!!
         //G3D::Vector3 iRot;
         float iInvScale; /**< TODO */
         float iScale; /**< TODO */
@@ -90,6 +93,8 @@ class GameObjectModel
          * @return const G3D::Vector3
          */
         const G3D::Vector3& getPosition() const { return iPos;}
+
+        void UpdateRotation(G3D::Quat const& q);
 
         /** Enables\disables collision. */
         /**

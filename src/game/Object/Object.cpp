@@ -422,7 +422,7 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint16 updateFlags) const
 
             data->WriteGuidBytes<5, 7>(tGuid);
             *data << uint32(unit->m_movementInfo.GetTransportTime());
-            *data << float(NormalizeOrientation(unit->m_movementInfo.GetTransportPos()->o));
+            *data << float(MapManager::MapManager::NormalizeOrientation(unit->m_movementInfo.GetTransportPos()->o));
 
             if (hasTransportTime2)
             {
@@ -460,7 +460,7 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint16 updateFlags) const
 
         if (hasOrientation)
         {
-            *data << float(NormalizeOrientation(unit->GetOrientation()));
+            *data << float(MapManager::NormalizeOrientation(unit->GetOrientation()));
         }
 
         *data << float(unit->GetSpeed(MOVE_RUN));
@@ -475,7 +475,7 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint16 updateFlags) const
 
     if (updateFlags & UPDATEFLAG_VEHICLE)
     {
-        *data << float(NormalizeOrientation(((WorldObject*)this)->GetOrientation()));
+        *data << float(MapManager::NormalizeOrientation(((WorldObject*)this)->GetOrientation()));
         *data << uint32(((Unit*)this)->GetVehicleInfo()->GetVehicleEntry()->m_ID); // vehicle id
     }
 
@@ -534,7 +534,7 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint16 updateFlags) const
 
     if (updateFlags & UPDATEFLAG_HAS_POSITION)
     {
-        *data << float(NormalizeOrientation(((WorldObject*)this)->GetOrientation()));
+        *data << float(MapManager::NormalizeOrientation(((WorldObject*)this)->GetOrientation()));
         *data << float(((WorldObject*)this)->GetPositionX());
         *data << float(((WorldObject*)this)->GetPositionY());
         *data << float(((WorldObject*)this)->GetPositionZ());
@@ -1239,7 +1239,7 @@ void WorldObject::Relocate(float x, float y, float z, float orientation)
     m_position.x = x;
     m_position.y = y;
     m_position.z = z;
-    m_position.o = NormalizeOrientation(orientation);
+    m_position.o = MapManager::NormalizeOrientation(orientation);
 
     if (isType(TYPEMASK_UNIT))
     {
@@ -1261,7 +1261,7 @@ void WorldObject::Relocate(float x, float y, float z)
 
 void WorldObject::SetOrientation(float orientation)
 {
-    m_position.o = NormalizeOrientation(orientation);
+    m_position.o = MapManager::NormalizeOrientation(orientation);
 
     if (isType(TYPEMASK_UNIT))
     {
@@ -1529,13 +1529,13 @@ bool WorldObject::HasInArc(const float arcangle, const WorldObject* obj) const
     float arc = arcangle;
 
     // move arc to range 0.. 2*pi
-    arc = NormalizeOrientation(arc);
+    arc = MapManager::NormalizeOrientation(arc);
 
     float angle = GetAngle(obj);
     angle -= m_position.o;
 
     // move angle to range -pi ... +pi
-    angle = NormalizeOrientation(angle);
+    angle = MapManager::NormalizeOrientation(angle);
     if (angle > M_PI_F)
     {
         angle -= 2.0f * M_PI_F;
@@ -1915,7 +1915,7 @@ void WorldObject::AddObjectToRemoveList()
     GetMap()->AddObjectToRemoveList(this);
 }
 
-Creature* WorldObject::SummonCreature(uint32 id, float x, float y, float z, float ang, TempSummonType spwtype, uint32 despwtime, bool asActiveObject, bool setRun)
+Creature* WorldObject::SummonCreature(uint32 id, float x, float y, float z, float ang, TempSpawnType spwtype, uint32 despwtime, bool asActiveObject, bool setRun)
 {
     CreatureInfo const* cinfo = ObjectMgr::GetCreatureTemplate(id);
     if (!cinfo)
@@ -2010,7 +2010,7 @@ namespace MaNGOS
     {
         public:
             NearUsedPosDo(WorldObject const& obj, WorldObject const* searcher, float absAngle, ObjectPosSelector& selector)
-                : i_object(obj), i_searcher(searcher), i_absAngle(NormalizeOrientation(absAngle)), i_selector(selector) {}
+                : i_object(obj), i_searcher(searcher), i_absAngle(MapManager::NormalizeOrientation(absAngle)), i_selector(selector) {}
 
             void operator()(Corpse*) const {}
             void operator()(DynamicObject*) const {}

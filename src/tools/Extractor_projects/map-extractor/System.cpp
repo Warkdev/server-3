@@ -339,7 +339,7 @@ uint32 ReadMapDBC(int const locale)
         map_ids[x].id = dbc.getRecord(x).getUInt(0);
         strcpy(map_ids[x].name, dbc.getRecord(x).getString(1));
     }
-    printf(" Success! %lu maps loaded.\n", map_count);
+    printf(" Success! %zu maps loaded.\n", map_count);
     return map_count;
 }
 
@@ -382,7 +382,7 @@ void ReadAreaTableDBC(int const locale)
 
     maxAreaId = dbc.getMaxId();
 
-    printf(" Success! %lu areas loaded.\n", area_count);
+    printf(" Success! %zu areas loaded.\n", area_count);
 }
 
 void ReadLiquidTypeTableDBC(int const locale)
@@ -421,7 +421,7 @@ void ReadLiquidTypeTableDBC(int const locale)
         LiqType[dbc.getRecord(x).getUInt(0)] = dbc.getRecord(x).getUInt(3);
     }
 
-    printf(" Success! %lu liquid types loaded.\n", LiqType_count);
+    printf(" Success! %zu liquid types loaded.\n", LiqType_count);
 }
 
 //

@@ -59,7 +59,7 @@ namespace Movement
                 break;
             case MoveSplineFlag::Final_Angle:
                 data << uint8(MonsterMoveFacingAngle);
-                data << NormalizeOrientation(move_spline.facing.angle);
+                data << MapManager::NormalizeOrientation(move_spline.facing.angle);
                 break;
             case MoveSplineFlag::Final_Point:
                 data << uint8(MonsterMoveFacingSpot);
@@ -203,7 +203,7 @@ namespace Movement
 
             if (move_spline.splineflags & MoveSplineFlag::Final_Angle)
             {
-                data << float(NormalizeOrientation(move_spline.facing.angle));
+                data << float(MapManager::NormalizeOrientation(move_spline.facing.angle));
             }
             else if (move_spline.splineflags & MoveSplineFlag::Final_Target)
             {

@@ -96,6 +96,8 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
     DEBUG_LOG("WORLD: Received opcode CMSG_WHO");
     // recv_data.hexlike();
 
+    uint32 clientcount = 0;
+
     uint32 level_min, level_max, racemask, classmask, zones_count, str_count;
     uint32 zoneids[10];                                     // 10 is client limit
     std::string player_name, guild_name;
@@ -112,7 +114,7 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
 
     if (zones_count > 10)
     {
-        return;                                             // can't be received from real client or broken packet
+        return;                                              // can't be received from real client or broken packet
     }
 
     for (uint32 i = 0; i < zones_count; ++i)
@@ -127,7 +129,7 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
 
     if (str_count > 4)
     {
-        return;                                             // can't be received from real client or broken packet
+        return;                                              // can't be received from real client or broken packet
     }
 
     DEBUG_LOG("Minlvl %u, maxlvl %u, name %s, guild %s, racemask %u, classmask %u, zones %u, strings %u", level_min, level_max, player_name.c_str(), guild_name.c_str(), racemask, classmask, zones_count, str_count);
@@ -169,162 +171,152 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
     bool allowTwoSideWhoList = sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_WHO_LIST);
     AccountTypes gmLevelInWhoList = (AccountTypes)sWorld.getConfig(CONFIG_UINT32_GM_LEVEL_IN_WHO_LIST);
 
-    uint32 matchcount = 0;
-    uint32 displaycount = 0;
-
     WorldPacket data(SMSG_WHO, 50);                         // guess size
-    data << uint32(matchcount);                             // clientcount place holder, listed count
-    data << uint32(displaycount);                           // clientcount place holder, online count
+    data << uint32(clientcount);                            // clientcount place holder, listed count
+    data << uint32(clientcount);                            // clientcount place holder, online count
 
-    // TODO: Guard Player map
-    HashMapHolder<Player>::MapType& m = sObjectAccessor.GetPlayers();
-    for (HashMapHolder<Player>::MapType::const_iterator itr = m.begin(); itr != m.end(); ++itr)
-    {
-        Player* pl = itr->second;
-
-        if (security == SEC_PLAYER)
+    uint32 count = 0;
+    sObjectAccessor.DoForAllPlayers([&](Player* pl)->void
         {
-            // player can see member of other team only if CONFIG_BOOL_ALLOW_TWO_SIDE_WHO_LIST
-            if (pl->GetTeam() != team && !allowTwoSideWhoList)
+            ++count;
+
+            if (clientcount == 50)
             {
-                continue;
+                return;
             }
 
-            // player can see MODERATOR, GAME MASTER, ADMINISTRATOR only if CONFIG_GM_IN_WHO_LIST
-            if (pl->GetSession()->GetSecurity() > gmLevelInWhoList)
+            if (security == SEC_PLAYER)
             {
-                continue;
-            }
-        }
-
-        // do not process players which are not in world
-        if (!pl->IsInWorld())
-        {
-            continue;
-        }
-
-        // check if target is globally visible for player
-        if (!pl->IsVisibleGloballyFor(_player))
-        {
-            continue;
-        }
-
-        // check if target's level is in level range
-        uint32 lvl = pl->getLevel();
-        if (lvl < level_min || lvl > level_max)
-        {
-            continue;
-        }
-
-        // check if class matches classmask
-        uint32 class_ = pl->getClass();
-        if (!(classmask & (1 << class_)))
-        {
-            continue;
-        }
-
-        // check if race matches racemask
-        uint32 race = pl->getRace();
-        if (!(racemask & (1 << race)))
-        {
-            continue;
-        }
-
-        uint32 pzoneid = pl->GetZoneId();
-        uint8 gender = pl->getGender();
-
-        bool z_show = true;
-        for (uint32 i = 0; i < zones_count; ++i)
-        {
-            if (zoneids[i] == pzoneid)
-            {
-                z_show = true;
-                break;
-            }
-
-            z_show = false;
-        }
-        if (!z_show)
-        {
-            continue;
-        }
-
-        std::string pname = pl->GetName();
-        std::wstring wpname;
-        if (!Utf8toWStr(pname, wpname))
-        {
-            continue;
-        }
-        wstrToLower(wpname);
-
-        if (!(wplayer_name.empty() || wpname.find(wplayer_name) != std::wstring::npos))
-        {
-            continue;
-        }
-
-        std::string gname = sGuildMgr.GetGuildNameById(pl->GetGuildId());
-        std::wstring wgname;
-        if (!Utf8toWStr(gname, wgname))
-        {
-            continue;
-        }
-        wstrToLower(wgname);
-
-        if (!(wguild_name.empty() || wgname.find(wguild_name) != std::wstring::npos))
-        {
-            continue;
-        }
-
-        std::string aname;
-        if (AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(pzoneid))
-        {
-            aname = areaEntry->area_name[GetSessionDbcLocale()];
-        }
-
-        bool s_show = true;
-        for (uint32 i = 0; i < str_count; ++i)
-        {
-            if (!str[i].empty())
-            {
-                if (wgname.find(str[i]) != std::wstring::npos ||
-                        wpname.find(str[i]) != std::wstring::npos ||
-                        Utf8FitTo(aname, str[i]))
+                // player can see member of other team only if CONFIG_BOOL_ALLOW_TWO_SIDE_WHO_LIST
+                if (pl->GetTeam() != team && !allowTwoSideWhoList)
                 {
-                    s_show = true;
+                    return;
+                }
+
+                // player can see MODERATOR, GAME MASTER, ADMINISTRATOR only if CONFIG_GM_IN_WHO_LIST
+                if (pl->GetSession()->GetSecurity() > gmLevelInWhoList)
+                {
+                    return;
+                }
+            }
+
+            // do not process players which are not in world
+            if (!pl->IsInWorld())
+            {
+                return;
+            }
+
+            // check if target is globally visible for player
+            if (!pl->IsVisibleGloballyFor(_player))
+            {
+                return;
+            }
+
+            // check if target's level is in level range
+            uint32 lvl = pl->getLevel();
+            if (lvl < level_min || lvl > level_max)
+            {
+                return;
+            }
+
+            // check if class matches classmask
+            uint32 class_ = pl->getClass();
+            if (!(classmask & (1 << class_)))
+            {
+                return;
+            }
+
+            // check if race matches racemask
+            uint32 race = pl->getRace();
+            if (!(racemask & (1 << race)))
+            {
+                return;
+            }
+
+            uint32 pzoneid = pl->GetZoneId();
+            uint8 gender = pl->getGender();
+
+            bool z_show = true;
+            for (uint32 i = 0; i < zones_count; ++i)
+            {
+                if (zoneids[i] == pzoneid)
+                {
+                    z_show = true;
                     break;
                 }
-                s_show = false;
+
+                z_show = false;
             }
-        }
-        if (!s_show)
-        {
-            continue;
-        }
+            if (!z_show)
+            {
+                return;
+            }
 
-        // 49 is maximum player count sent to client
-        if (++matchcount > 49)
-        {
-            continue;
-        }
+            std::string pname = pl->GetName();
+            std::wstring wpname;
+            if (!Utf8toWStr(pname, wpname))
+            {
+                return;
+            }
+            wstrToLower(wpname);
 
-        ++displaycount;
+            if (!(wplayer_name.empty() || wpname.find(wplayer_name) != std::wstring::npos))
+            {
+                return;
+            }
 
-        data << pname;                                      // player name
-        data << gname;                                      // guild name
-        data << uint32(lvl);                                // player level
-        data << uint32(class_);                             // player class
-        data << uint32(race);                               // player race
-        data << uint8(gender);                              // player gender
-        data << uint32(pzoneid);                            // player zone id
-    }
+            std::string gname = sGuildMgr.GetGuildNameById(pl->GetGuildId());
+            std::wstring wgname;
+            if (!Utf8toWStr(gname, wgname))
+            {
+                return;
+            }
+            wstrToLower(wgname);
 
-    if (sWorld.getConfig(CONFIG_UINT32_MAX_WHOLIST_RETURNS) && matchcount > sWorld.getConfig(CONFIG_UINT32_MAX_WHOLIST_RETURNS))
-    {
-        matchcount = sWorld.getConfig(CONFIG_UINT32_MAX_WHOLIST_RETURNS);
-    }
+            if (!(wguild_name.empty() || wgname.find(wguild_name) != std::wstring::npos))
+            {
+                return;
+            }
 
-    data.put(0, displaycount);                              // insert right count, count displayed
-    data.put(4, matchcount);                                // insert right count, count of matches
+            std::string aname;
+            if (AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(pzoneid))
+            {
+                aname = areaEntry->area_name[GetSessionDbcLocale()];
+            }
+
+            bool s_show = true;
+            for (uint32 i = 0; i < str_count; ++i)
+            {
+                if (!str[i].empty())
+                {
+                    if (wgname.find(str[i]) != std::wstring::npos ||
+                        wpname.find(str[i]) != std::wstring::npos ||
+                        Utf8FitTo(aname, str[i]))
+                    {
+                        s_show = true;
+                        break;
+                    }
+                    s_show = false;
+                }
+            }
+            if (!s_show)
+            {
+                return;
+            }
+
+            data << pname;                                      // player name
+            data << gname;                                      // guild name
+            data << uint32(lvl);                                // player level
+            data << uint32(class_);                             // player class
+            data << uint32(race);                               // player race
+            data << uint8(gender);                              // player gender
+            data << uint32(pzoneid);                            // player zone id
+
+            ++clientcount;
+        });
+
+    data.put(0, clientcount);                               // insert right count, listed count
+    data.put(4, count > 50 ? count : clientcount);          // insert right count, online count
 
     SendPacket(&data);
     DEBUG_LOG("WORLD: Send SMSG_WHO Message");
@@ -464,7 +456,7 @@ void WorldSession::HandleSetTargetOpcode(WorldPacket& recv_data)
     _player->SetTargetGuid(guid);
 
     // update reputation list if need
-    Unit* unit = ObjectAccessor::GetUnit(*_player, guid);   // can select group members at diff maps
+    Unit* unit = sObjectAccessor.GetUnit(*_player, guid);   // can select group members at diff maps
     if (!unit)
     {
         return;
@@ -484,7 +476,7 @@ void WorldSession::HandleSetSelectionOpcode(WorldPacket& recv_data)
     _player->SetSelectionGuid(guid);
 
     // update reputation list if need
-    Unit* unit = ObjectAccessor::GetUnit(*_player, guid);   // can select group members at diff maps
+    Unit* unit = sObjectAccessor.GetUnit(*_player, guid);   // can select group members at diff maps
     if (!unit)
     {
         return;
@@ -574,7 +566,7 @@ void WorldSession::HandleAddFriendOpcodeCallBack(QueryResult* result, uint32 acc
         }
         else
         {
-            Player* pFriend = ObjectAccessor::FindPlayer(friendGuid);
+            Player* pFriend = sObjectAccessor.FindPlayer(friendGuid);
             if (pFriend && pFriend->IsInWorld() && pFriend->IsVisibleGloballyFor(session->GetPlayer()))
             {
                 friendResult = FRIEND_ADDED_ONLINE;

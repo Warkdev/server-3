@@ -138,7 +138,7 @@ void GameObject::RemoveFromWorld()
         // Remove GO from owner
         if (ObjectGuid owner_guid = GetOwnerGuid())
         {
-            if (Unit* owner = ObjectAccessor::GetUnit(*this, owner_guid))
+            if (Unit* owner = sObjectAccessor.GetUnit(*this, owner_guid))
             {
                 owner->RemoveGameObject(this, false);
             }
@@ -846,7 +846,7 @@ bool GameObject::IsTransport() const
 
 Unit* GameObject::GetOwner() const
 {
-    return ObjectAccessor::GetUnit(*this, GetOwnerGuid());
+    return sObjectAccessor.GetUnit(*this, GetOwnerGuid());
 }
 
 void GameObject::SaveRespawnTime()
@@ -1398,7 +1398,7 @@ void GameObject::Use(Unit* user)
                     float thisDistance = player->GetDistance2d(x_i, y_i);
 
                     /* debug code. It will spawn a npc on each slot to visualize them.
-                    Creature* helper = player->SummonCreature(14496, x_i, y_i, GetPositionZ(), GetOrientation(), TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 10000);
+                    Creature* helper = player->SummonCreature(14496, x_i, y_i, GetPositionZ(), GetOrientation(), TEMPSPAWN_TIMED_OR_DEAD_DESPAWN, 10000);
                     std::ostringstream output;
                     output << i << ": thisDist: " << thisDistance;
                     helper->MonsterSay(output.str().c_str(), LANG_UNIVERSAL);
@@ -1813,7 +1813,7 @@ void GameObject::Use(Unit* user)
 
             Player* player = (Player*)user;
 
-            Player* targetPlayer = ObjectAccessor::FindPlayer(player->GetSelectionGuid());
+            Player* targetPlayer = sObjectAccessor.FindPlayer(player->GetSelectionGuid());
 
             // accept only use by player from same group for caster except caster itself
             if (!targetPlayer || targetPlayer == player || !targetPlayer->IsInSameGroupWith(player))
@@ -2073,6 +2073,53 @@ void GameObject::SetWorldRotationAngles(float z_rot, float y_rot, float x_rot)
     SetWorldRotation(quat.x, quat.y, quat.z, quat.w);
 }
 
+void GameObject::SetQuaternion(G3D::Quat const& q)
+{
+    SetFloatValue(GAMEOBJECT_PARENTROTATION + 0, q.x);
+    SetFloatValue(GAMEOBJECT_PARENTROTATION + 1, q.y);
+    SetFloatValue(GAMEOBJECT_PARENTROTATION + 2, q.z);
+    SetFloatValue(GAMEOBJECT_PARENTROTATION + 3, q.w);
+
+    if (m_model)
+    {
+        m_model->UpdateRotation(q);
+    }
+}
+
+void GameObject::GetQuaternion(G3D::Quat& q) const
+{
+    q.x = GetFloatValue(GAMEOBJECT_PARENTROTATION + 0);
+    q.y = GetFloatValue(GAMEOBJECT_PARENTROTATION + 1);
+    q.z = GetFloatValue(GAMEOBJECT_PARENTROTATION + 2);
+    q.w = GetFloatValue(GAMEOBJECT_PARENTROTATION + 3);
+}
+
+float GameObject::GetOrientationFromQuat(G3D::Quat const& q)
+{
+    double t1 = +2.0f * (q.w * q.z + q.x * q.y);
+    double t2 = +1.0f - 2.0f * (q.y * q.y + q.z * q.z);
+    return MapManager::NormalizeOrientation(std::atan2(t1, t2));
+}
+
+int64 GameObject::GetPackedRotation()
+{
+    enum
+    {
+        PACK_COEFF_YZ = 1 << 20,
+        PACK_COEFF_X = 1 << 21,
+    };
+
+    G3D::Quat quat;
+    GetQuaternion(quat);
+
+    int8 w_sign = (quat.w >= 0 ? 1 : -1);
+    int64 X = int32(quat.x * PACK_COEFF_X) * w_sign & ((1 << 22) - 1);
+    int64 Y = int32(quat.y * PACK_COEFF_YZ) * w_sign & ((1 << 21) - 1);
+    int64 Z = int32(quat.z * PACK_COEFF_YZ) * w_sign & ((1 << 21) - 1);
+    return Z | (Y << 21) | (X << 42);
+}
+
+
 bool GameObject::IsHostileTo(Unit const* unit) const
 {
     // always non-hostile to GM in GM mode
@@ -2267,7 +2314,7 @@ void GameObject::StopGroupLoot()
 
 Player* GameObject::GetOriginalLootRecipient() const
 {
-    return m_lootRecipientGuid ? ObjectAccessor::FindPlayer(m_lootRecipientGuid) : NULL;
+    return m_lootRecipientGuid ? sObjectAccessor.FindPlayer(m_lootRecipientGuid) : NULL;
 }
 
 Group* GameObject::GetGroupLootRecipient() const
