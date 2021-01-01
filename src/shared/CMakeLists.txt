@@ -50,6 +50,9 @@ set(SRC_GRP_CONFIG
 source_group("Config" FILES ${SRC_GRP_CONFIG})
 
 set(SRC_GRP_DATASTORE
+  DataStores/DB2FileLoader.cpp
+  DataStores/DB2FileLoader.h
+  DataStores/DB2Store.h
   DataStores/DBCFileLoader.cpp
   DataStores/DBCFileLoader.h
   DataStores/DBCStore.h

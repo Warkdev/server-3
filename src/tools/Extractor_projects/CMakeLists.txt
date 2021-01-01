@@ -28,7 +28,7 @@ include_directories(
 
 add_definitions(-DMMAP_GENERATOR -DNO_CORE_FUNCS)
 
-add_library(vmap
+add_library(vmap STATIC
     ${CMAKE_SOURCE_DIR}/src/game/vmap/BIH.cpp
     ${CMAKE_SOURCE_DIR}/src/game/vmap/VMapManager2.cpp
     ${CMAKE_SOURCE_DIR}/src/game/vmap/MapTree.cpp
@@ -37,7 +37,7 @@ add_library(vmap
     ${CMAKE_SOURCE_DIR}/src/game/vmap/ModelInstance.cpp
 )
 
-target_link_libraries(vmap g3dlite zlib)
+target_link_libraries(vmap g3dlite zlib ace)
 
 # Used for install targets in subdirs
 set(TOOLS_DIR "tools")
