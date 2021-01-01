@@ -12,6 +12,9 @@
 !.gitattributes
 !.travis.yml
 
+# Visual Studio Code - Project Settings
+/.vscode
+
 # Visual Studio - project settings
 /.vs
 
